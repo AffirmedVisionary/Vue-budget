@@ -10,7 +10,8 @@ module.exports = mongoose => {
             payments: [{
                 dueDate: Date,
                 paid: Boolean
-            }]
+            }],
+            upToDate: Boolean
         },
         { timestamps: true }
     );

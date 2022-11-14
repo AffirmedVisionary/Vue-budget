@@ -1,6 +1,13 @@
 const db = require("../models");
 const Expense = db.expenses;
 
+const getPagination = (page, size) => {
+    const limit = size ? +size : 3;
+    const offset = page ? page * limit : 0;
+  
+    return { limit, offset };
+  };
+
 // Create and Save a new Expense
 exports.create = (req, res) => {
     // validate request
@@ -34,13 +41,20 @@ exports.create = (req, res) => {
 
 // Retrieve all Expenses from the database.
 exports.findAll = (req, res) => {
-const name  = req.query.name;
+const { page, size, name } = req.query;
 const condition = name ? { name: { $$regex: new RegExp(name), $options: "i" }} : {}
 
-Expense.find(condition).then(
-    data => { res.send(data);
-    }
-).catch(err => {
+const { limit, offset } = getPagination(page, size);
+
+Expense.paginate(condition, { offset, limit })
+.then((data) => {
+  res.send({
+    totalItems: data.totalDocs,
+    expenses: data.docs,
+    totalPages: data.totalPages,
+    currentPage: data.page - 1,
+  });
+}).catch(err => {
     res.status(500).send({
         message: err.message || "Some error occured while retrieving expenses"
     })
@@ -131,9 +145,17 @@ exports.deleteAll = (req, res) => {
 
 // Find all unpaid Expenses
 exports.findAllUpToDate = (req, res) => {
-    Expense.find({ upToDate: true })
-    .then(data => {
-      res.send(data);
+    const { page, size } = req.query;
+    const { limit, offset } = getPagination(page, size);
+
+    Expense.find({ upToDate: true }, { offset, limit })
+    .then((data) => {
+      res.send({
+        totalItems: data.totalDocs,
+        expenses: data.docs,
+        totalPages: data.totalPages,
+        currentPage: data.page - 1,
+      });
     })
     .catch(err => {
       res.status(500).send({
